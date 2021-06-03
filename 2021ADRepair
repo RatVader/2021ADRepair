@@ -1,0 +1,74 @@
+#!/bin/bash
+# Mojave Security Update 2021-004 Kerberos hang fix/workaround
+# Stops processes from hanging during Kerberos authentication on Active Directory bound machines
+# Credit to @croaker_1, @prbsparx, and @RatVader on the MacRumors forum:
+# https://forums.macrumors.com/threads/mojave-security-update-2021-004.2297615/?post=29938447#post-29938447
+
+# Version 1.4
+
+# Ensure script is running as root
+if [ "$(id -u)" != "0" ]; then
+  echo "This script MUST be run as root" && exit 1
+fi
+
+# Check Build Version
+build="$(sw_vers -buildVersion)"
+minorV="$(echo $build | cut -c 3)"
+majorV="$(echo $build | cut -c 1-2)"
+
+if [[ "$majorV" -eq 18 ]] || [[ "$majorV" -eq 19 ]]; then
+  echo "  1 - This machine is in Mojave or Catalina.  Continuing..."
+else
+  echo "This machine is not in Catalina or Mojave"
+  exit 0
+fi
+
+if [[ "$minorV" < "H" ]]; then
+  echo "Build Version is less than \"H\" so patch has not been applied"
+  echo "Exiting..."
+  exit 1
+else
+  echo "  2 - Build Version is greater than \"H\" Continuing..."
+fi
+
+echo "  3 - Checking cache access with klist..."
+precheck="$(klist 2>&1 & sleep 2; kill $! 2>&1)"
+
+if [[ $precheck ]]; then
+  echo "      klist success"
+  echo "      All good. Patch not required"
+  exit 0
+else
+  echo "      klist fail"
+  ## kill backgrounded klist because it is likely to be stuck
+  pkill klist
+  echo "      Patch is required. Keep going..."
+fi
+
+echo "  4 - Running pam.d fix"
+## remove use_kcminit entry from pam.d authorization and screensaver
+if [[ -f /etc/pam.d/authorization ]]; then
+  echo "      Backing up /etc/pam.d/authorization to .bak"
+  cp /etc/pam.d/authorization{,.bak}
+  echo "     Processing /etc/pam.d/authorization"
+  sed -i '' "s/use_kcminit//" "/etc/pam.d/authorization"
+else
+  echo "      /etc/pam.d/authorization not found"
+  echo "      Patch failed"
+  exit 2
+fi
+
+if [[ -f /etc/pam.d/screensaver ]]; then
+  echo "  5 - Backing up /etc/pam.d/screensaver" to .bak"
+  cp /etc/pam.d/screensaver{,.bak}
+  echo "      Processing /etc/pam.d/screensaver"
+  sed -i '' "s/use_kcminit//" "/etc/pam.d/screensaver"
+else
+  echo "      /etc/pam.d/screensaver not found"
+  echo "      Patch failed"
+  exit 2
+fi
+
+# kill related processes
+echo "  6 - Killing related processes"
+pkill coreauthd kcm kdc
