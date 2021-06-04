@@ -4,34 +4,36 @@
 # Credit to @croaker_1, @prbsparx, and @RatVader on the MacRumors forum:
 # https://forums.macrumors.com/threads/mojave-security-update-2021-004.2297615/?post=29938447#post-29938447
 
-# Version 1.4
+# Version 1.5
 
 # Ensure script is running as root
 if [ "$(id -u)" != "0" ]; then
   echo "This script MUST be run as root" && exit 1
 fi
 
+echo "  1 - Checking build..."
+
 # Check Build Version
 build="$(sw_vers -buildVersion)"
-minorV="$(echo $build | cut -c 3)"
+minorV="$(echo $build | cut -c 4-)"
 majorV="$(echo $build | cut -c 1-2)"
 
-if [[ "$majorV" -eq 18 ]] || [[ "$majorV" -eq 19 ]]; then
-  echo "  1 - This machine is in Mojave or Catalina.  Continuing..."
-else
-  echo "This machine is not in Catalina or Mojave"
-  exit 0
+if [[ "$majorV" -eq 18 ]]; then
+  if [[ "$minorV" -lt 9216 ]]; then
+    echo "      Update not yet applied"
+    exit 1
+  fi
+elif [[ "$majorV" -eq 19 ]]; then
+  if [[ "$minorV" -lt 1217 ]]; then
+    echo "      Update not yet applied"
+    exit 1
+  fi
 fi
 
-if [[ "$minorV" < "H" ]]; then
-  echo "Build Version is less than \"H\" so patch has not been applied"
-  echo "Exiting..."
-  exit 1
-else
-  echo "  2 - Build Version is greater than \"H\" Continuing..."
-fi
+echo "      Security udpate has been applied
+      Continuing..."
 
-echo "  3 - Checking cache access with klist..."
+echo "  2 - Checking cache access with klist..."
 precheck="$(klist 2>&1 & sleep 2; kill $! 2>&1)"
 
 if [[ $precheck ]]; then
@@ -45,7 +47,7 @@ else
   echo "      Patch is required. Keep going..."
 fi
 
-echo "  4 - Running pam.d fix"
+echo "  3 - Running pam.d fix"
 ## remove use_kcminit entry from pam.d authorization and screensaver
 if [[ -f /etc/pam.d/authorization ]]; then
   echo "      Backing up /etc/pam.d/authorization to .bak"
@@ -59,7 +61,7 @@ else
 fi
 
 if [[ -f /etc/pam.d/screensaver ]]; then
-  echo "  5 - Backing up /etc/pam.d/screensaver" to .bak"
+  echo "      Backing up /etc/pam.d/screensaver to .bak"
   cp /etc/pam.d/screensaver{,.bak}
   echo "      Processing /etc/pam.d/screensaver"
   sed -i '' "s/use_kcminit//" "/etc/pam.d/screensaver"
@@ -70,5 +72,5 @@ else
 fi
 
 # kill related processes
-echo "  6 - Killing related processes"
+echo "  4 - Killing related processes"
 pkill coreauthd kcm kdc
