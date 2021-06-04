@@ -28,6 +28,11 @@ elif [[ "$majorV" -eq 19 ]]; then
     echo "      Update not yet applied"
     exit 1
   fi
+else
+  echo "      This machine is not running Mojave or Catalina."
+  echo "      This script is only for machines affected by the 20210524 Mojave and Catalina updates."
+  echo "      Exiting..."
+  exit 1
 fi
 
 echo "      Security udpate has been applied
