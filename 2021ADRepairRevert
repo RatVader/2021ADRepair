@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Ensure script is running as root
+if [ "$(id -u)" != "0" ]; then
+  echo "This script MUST be run as root" && exit 1
+fi
+
+# Replace active config files with backups
+if [[ -f /etc/pam.d/authorization.bak ]]; then
+  mv -v /etc/pam.d/authorization{.bak,}
+else
+  echo "/etc/pam.d/authorization.bak not found, patch has likely not been applied"
+fi
+
+if [[ -f /etc/pam.d/screensaver.bak ]]; then
+  mv -v /etc/pam.d/screensaver{.bak,}
+else
+  echo "/etc/pam.d/screensaver.bak not found, patch has likely not been applied"
+fi
+
+# Kill related processes
+pkill coreauthd kcm kdc
