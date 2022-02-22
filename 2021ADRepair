@@ -6,7 +6,7 @@
 
 # Version 1.5
 
-# Ensure script is running as root
+# Insure script is running as root
 if [ "$(id -u)" != "0" ]; then
   echo "This script MUST be run as root" && exit 1
 fi
