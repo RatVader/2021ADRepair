@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Ensure script is running as root
+# Insure script is running as root
 if [ "$(id -u)" != "0" ]; then
   echo "This script MUST be run as root" && exit 1
 fi
@@ -16,6 +16,12 @@ if [[ -f /etc/pam.d/screensaver.bak ]]; then
   mv -v /etc/pam.d/screensaver{.bak,}
 else
   echo "/etc/pam.d/screensaver.bak not found, patch has likely not been applied"
+fi
+
+if [[ -f /etc/pam.d/login.bak ]]; then
+  mv -v /etc/pam.d/login{.bak,}
+else
+  echo "/etc/pam.d/login.bak not found"
 fi
 
 # Kill related processes
