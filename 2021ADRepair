@@ -3,8 +3,10 @@
 # Stops processes from hanging during Kerberos authentication on Active Directory bound machines
 # Credit to @croaker_1, @prbsparx, and @RatVader on the MacRumors forum:
 # https://forums.macrumors.com/threads/mojave-security-update-2021-004.2297615/?post=29938447#post-29938447
+# And @iRyan417 on the JAMF forum:
+# https://community.jamf.com/t5/jamf-pro/kerberos-sso-hanging-with-mojave-security-update-2021-004/td-p/237145
 
-# Version 1.5
+# Version 1.6
 
 # Insure script is running as root
 if [ "$(id -u)" != "0" ]; then
@@ -74,6 +76,16 @@ else
   echo "      /etc/pam.d/screensaver not found"
   echo "      Patch failed"
   exit 2
+fi
+
+if [[ -f /etc/pam.d/login ]]; then
+  echo "      Backing up /etc/pam.d/login to .bak"
+  cp /etc/pam.d/login{,.bak}
+  echo "      Processing /etc/pam.d/login"
+  sed -i '' "s/use_kcminit//" "/etc/pam.d/login"
+else
+  echo "      /etc/pam.d/login not found"
+  echo "      Patch may still have been successful"
 fi
 
 # kill related processes
